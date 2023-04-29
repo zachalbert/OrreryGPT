@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import styles from './Orrery.module.css';
+import { PlayOutline, PauseOutline } from '@carbon/icons-react';
+import { Slider } from 'carbon-components-react';
 
 const fetchData = async () => {
   const cachedData = localStorage.getItem('planetsData');
@@ -25,6 +27,16 @@ const fetchData = async () => {
 
 const Orrery = () => {
   const [planetsData, setPlanetsData] = useState([]);
+  const [isPaused, setIsPaused] = useState(false);
+  const [animationSpeed, setAnimationSpeed] = useState(1);
+
+  const handlePlayPause = () => {
+    setIsPaused(!isPaused);
+  };
+
+  const handleSpeedChange = ({ value }) => {
+    setAnimationSpeed(value);
+  };
 
   useEffect(() => {
     const fetchPlanets = async () => {
@@ -55,9 +67,9 @@ const Orrery = () => {
       ((planet.meanRadius - 2439) / (69841 - 2439)) *
         (maxPlanetSize - minPlanetSize) +
       minPlanetSize;
-    const animationDuration =
-      (planet.sideralOrbit / planetsData[0].sideralOrbit) * 1;
     const initialRotation = planet.mainAnomaly;
+    const animationDuration =
+      (planet.sideralOrbit / planetsData[0].sideralOrbit) * 10;
 
     return (
       <div
@@ -66,8 +78,9 @@ const Orrery = () => {
         style={{
           width: `${orbitSize}px`,
           height: `${orbitSize}px`,
-          animationDuration: `${animationDuration}s`,
+          animationDuration: `${animationDuration / animationSpeed}s`,
           animationDelay: `-${(initialRotation / 360) * animationDuration}s`,
+          animationPlayState: `${isPaused ? 'paused' : 'running'}`,
         }}
       >
         <div
@@ -82,15 +95,30 @@ const Orrery = () => {
   };
 
   return (
-    <div
-      className={styles.orrery}
-      style={{ width: `${orrerySize}px`, height: `${orrerySize}px` }}
-    >
+    <div className={styles.container}>
+      <div className={styles.controls}>
+        <button onClick={handlePlayPause}>
+          {isPaused ? <PlayOutline /> : <PauseOutline />}
+        </button>
+        <Slider
+          min={1}
+          max={5}
+          step={1}
+          value={animationSpeed}
+          labelText="Animation Speed"
+          onChange={handleSpeedChange}
+        />
+      </div>
       <div
-        className={styles.sun}
-        style={{ width: `${sunSize}px`, height: `${sunSize}px` }}
-      ></div>
-      {planetsData.map(renderPlanet)}
+        className={styles.orrery}
+        style={{ width: `${orrerySize}px`, height: `${orrerySize}px` }}
+      >
+        <div
+          className={styles.sun}
+          style={{ width: `${sunSize}px`, height: `${sunSize}px` }}
+        ></div>
+        {planetsData.map(renderPlanet)}
+      </div>
     </div>
   );
 };
