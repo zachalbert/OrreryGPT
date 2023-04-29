@@ -2,11 +2,25 @@ import React, { useEffect, useState } from 'react';
 import styles from './Orrery.module.css';
 
 const fetchData = async () => {
-  const response = await fetch(
-    'https://api.le-systeme-solaire.net/rest/bodies?filter[]=isPlanet,neq,0'
-  );
-  const data = await response.json();
-  return data.bodies;
+  const cachedData = localStorage.getItem('planetsData');
+  const lastFetchTimestamp = localStorage.getItem('lastFetchTimestamp');
+  const currentTime = new Date().getTime();
+
+  if (
+    cachedData &&
+    lastFetchTimestamp &&
+    currentTime - lastFetchTimestamp < 86400000
+  ) {
+    return JSON.parse(cachedData);
+  } else {
+    const response = await fetch(
+      'https://api.le-systeme-solaire.net/rest/bodies?filter[]=isPlanet,neq,0'
+    );
+    const data = await response.json();
+    localStorage.setItem('planetsData', JSON.stringify(data.bodies));
+    localStorage.setItem('lastFetchTimestamp', currentTime);
+    return data.bodies;
+  }
 };
 
 const Orrery = () => {
@@ -38,11 +52,12 @@ const Orrery = () => {
   const renderPlanet = (planet, index) => {
     const orbitSize = minOrbitSize + index * orbitStep;
     const planetSize =
-      ((planet.meanRadius - 2439) / (69_841 - 2439)) *
+      ((planet.meanRadius - 2439) / (69841 - 2439)) *
         (maxPlanetSize - minPlanetSize) +
       minPlanetSize;
     const animationDuration =
-      (planet.sideralOrbit / planetsData[0].sideralOrbit) * 3;
+      (planet.sideralOrbit / planetsData[0].sideralOrbit) * 1;
+    const initialRotation = planet.mainAnomaly;
 
     return (
       <div
@@ -52,6 +67,7 @@ const Orrery = () => {
           width: `${orbitSize}px`,
           height: `${orbitSize}px`,
           animationDuration: `${animationDuration}s`,
+          animationDelay: `-${(initialRotation / 360) * animationDuration}s`,
         }}
       >
         <div

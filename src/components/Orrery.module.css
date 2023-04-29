@@ -15,7 +15,7 @@
 
 .orbit {
   position: absolute;
-  border: 1px solid white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 50%;
   top: 50%;
   left: 50%;
@@ -25,7 +25,7 @@
 
 .planet {
   position: absolute;
-  background-color: blue;
+  background-color: rgb(54, 54, 255);
   border-radius: 50%;
   top: 0;
   left: 50%;
