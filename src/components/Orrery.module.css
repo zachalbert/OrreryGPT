@@ -1,49 +1,52 @@
 .orrery {
-  position: relative;
-  margin: 0 auto;
-  background-color: black;
+  @apply relative
+  mx-auto;
 }
 
 .sun {
-  position: absolute;
-  background-color: yellow;
-  border-radius: 50%;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  @apply absolute
+  bg-amber-100
+  rounded-full
+  top-1/2
+  left-1/2
+  -translate-x-1/2
+  -translate-y-1/2
+  shadow-[0_0_100px_0_rgb(255,255,255)]
+  shadow-amber-50;
 }
 
 .orbit,
 .moonOrbit {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-  animation: orbitCCW linear infinite;
+  @apply absolute
+  left-1/2
+  top-1/2
+  border
+  border-white
+  border-opacity-10
+  rounded-full
+  -translate-x-1/2
+  -translate-y-1/2;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.orbit {
+  animation-name: orbitCCW;
 }
 
 .moonOrbit {
-  border: none;
-}
-
-.moonOrbit.Triton {
-  animation: orbitCW linear infinite;
+  @apply border-none;
 }
 
 .planet,
 .moon {
-  position: absolute;
-  border-radius: 50%;
-  top: 0;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background-color: rgb(54, 54, 255);
-}
-
-.moon {
-  background-color: blue;
+  @apply absolute
+  rounded-full
+  top-0
+  left-1/2
+  -translate-x-1/2
+  -translate-y-1/2
+  z-40;
 }
 
 @keyframes orbitCCW {
