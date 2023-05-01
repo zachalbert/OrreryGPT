@@ -226,8 +226,8 @@ const Orrery = () => {
           {planetsData.map(renderPlanet)}
         </div>
       )}
-      <div className="text-slate-500 absolute bottom-4 mx-auto flex space-x-1 items-center">
-        <span>A ChatGPT-assisted solar system simulator by</span>
+      <div className="text-slate-500 text-xs md:text-base absolute bottom-4 mx-auto flex space-x-1 items-center">
+        <span>ChatGPT-assisted solar system by</span>
         <a href="https://www.zachalbert.com/" target="_blank" rel="noreferrer">
           Zac
         </a>
