@@ -13,26 +13,49 @@
   transform: translate(-50%, -50%);
 }
 
-.orbit {
+.orbit,
+.moonOrbit {
   position: absolute;
+  left: 50%;
+  top: 50%;
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 50%;
-  top: 50%;
-  left: 50%;
   transform: translate(-50%, -50%);
-  animation: orbit linear infinite;
+  animation: orbitCCW linear infinite;
 }
 
-.planet {
+.moonOrbit {
+  border: none;
+}
+
+.moonOrbit.Triton {
+  animation: orbitCW linear infinite;
+}
+
+.planet,
+.moon {
   position: absolute;
-  background-color: rgb(54, 54, 255);
   border-radius: 50%;
   top: 0;
   left: 50%;
   transform: translate(-50%, -50%);
+  background-color: rgb(54, 54, 255);
 }
 
-@keyframes orbit {
+.moon {
+  background-color: blue;
+}
+
+@keyframes orbitCCW {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(-360deg);
+  }
+}
+
+@keyframes orbitCW {
   0% {
     transform: translate(-50%, -50%) rotate(0deg);
   }

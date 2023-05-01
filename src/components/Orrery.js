@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import styles from './Orrery.module.css';
+import cx from 'classnames';
 import { PlayOutline, PauseOutline } from '@carbon/icons-react';
-import { Slider } from 'carbon-components-react';
 
 const fetchData = async () => {
   const cachedData = localStorage.getItem('planetsData');
@@ -16,27 +16,57 @@ const fetchData = async () => {
     return JSON.parse(cachedData);
   } else {
     const response = await fetch(
-      'https://api.le-systeme-solaire.net/rest/bodies?filter[]=isPlanet,neq,0'
+      'https://api.le-systeme-solaire.net/rest/bodies?filter[]=isPlanet,neq,0;filter[]=isPlanet,neq,-1'
     );
     const data = await response.json();
-    localStorage.setItem('planetsData', JSON.stringify(data.bodies));
+    const planetData = data.bodies;
+
+    for (const planet of planetData) {
+      if (planet.moons) {
+        const moonResponse = await fetch(
+          `https://api.le-systeme-solaire.net/rest/bodies?filter[]=aroundPlanet,eq,${planet.id}`
+        );
+        const moonData = await moonResponse.json();
+        planet.moonsData = moonData.bodies;
+      }
+    }
+
+    localStorage.setItem('planetsData', JSON.stringify(planetData));
     localStorage.setItem('lastFetchTimestamp', currentTime);
-    return data.bodies;
+    return planetData;
   }
 };
 
 const Orrery = () => {
+  const defaultAnimationSpeed = 1;
   const [planetsData, setPlanetsData] = useState([]);
   const [isPaused, setIsPaused] = useState(false);
-  const [animationSpeed, setAnimationSpeed] = useState(1);
+  const [animationSpeed, setAnimationSpeed] = useState(defaultAnimationSpeed);
+  const [prevAnimationSpeed, setPrevAnimationSpeed] = useState(
+    defaultAnimationSpeed
+  );
+  const [simStarted, setSimStarted] = useState(new Date().getTime());
 
   const handlePlayPause = () => {
     setIsPaused(!isPaused);
   };
 
-  const handleSpeedChange = ({ value }) => {
-    setAnimationSpeed(value);
+  const handleSpeedChange = event => {
+    setPrevAnimationSpeed(animationSpeed);
+    setAnimationSpeed(event.target.value);
   };
+
+  const orrerySize = 800;
+  const minPlanetSize = 20;
+
+  const moonOrbitStep = 15;
+  const moonSpeedFactor = 1;
+
+  const orbitStep = orrerySize / (planetsData.length + 3);
+  const maxPlanetSize = orbitStep / 2;
+  const sunSize = maxPlanetSize * 1.5;
+  const moonSize = moonOrbitStep / 2;
+  const minOrbitSize = sunSize + orbitStep;
 
   useEffect(() => {
     const fetchPlanets = async () => {
@@ -54,12 +84,39 @@ const Orrery = () => {
     fetchPlanets();
   }, []);
 
-  const orrerySize = 800;
-  const sunSize = 30;
-  const minPlanetSize = 20;
-  const maxPlanetSize = 40;
-  const minOrbitSize = 60;
-  const orbitStep = (orrerySize / 2 - minOrbitSize) / planetsData.length;
+  const renderMoon = (moon, index, planetSize, planetAnimationDuration) => {
+    const moonOrbitSize = planetSize + moonOrbitStep + index * moonOrbitStep;
+    const initialRotation = moon.mainAnomaly;
+    const animationDuration = moon.sideralOrbit * moonSpeedFactor;
+
+    return (
+      <div
+        key={moon.id}
+        title={moon.englishName}
+        className={cx(
+          styles.moonOrbit,
+          styles.moon.englishName && styles.moon.englishName
+        )}
+        style={{
+          width: `${moonOrbitSize}px`,
+          height: `${moonOrbitSize}px`,
+          animationDuration: `${animationDuration / animationSpeed}s`,
+          animationDelay: `-${(initialRotation / 360) *
+            (animationDuration / animationSpeed)}s`,
+          animationPlayState: `${isPaused ? 'paused' : 'running'}`,
+        }}
+      >
+        <div
+          className={styles.moon}
+          title={moon.englishName}
+          style={{
+            width: `${moonSize}px`,
+            height: `${moonSize}px`,
+          }}
+        ></div>
+      </div>
+    );
+  };
 
   const renderPlanet = (planet, index) => {
     const orbitSize = minOrbitSize + index * orbitStep;
@@ -68,28 +125,52 @@ const Orrery = () => {
         (maxPlanetSize - minPlanetSize) +
       minPlanetSize;
     const initialRotation = planet.mainAnomaly;
-    const animationDuration =
-      (planet.sideralOrbit / planetsData[0].sideralOrbit) * 10;
+    const animationDuration = planet.sideralOrbit / animationSpeed;
+    const elapsedTime = (new Date().getTime() - simStarted) / 1000; // seconds since speed change
+
+    // Calculate the current rotation percentage
+    const previousAnimationDuration = planet.sideralOrbit / prevAnimationSpeed;
+    const currentRotationPercentage =
+      ((elapsedTime % previousAnimationDuration) / previousAnimationDuration) *
+      360;
+    // if (planet.id === 'mercure') {
+    //   console.log(currentRotationPercentage);
+    // }
+
+    const moons = planet.moonsData
+      ? planet.moonsData
+          .slice(0, 5)
+          .sort((a, b) => a.semimajorAxis - b.semimajorAxis)
+      : [];
 
     return (
       <div
         key={planet.id}
+        title={planet.englishName}
         className={styles.orbit}
         style={{
           width: `${orbitSize}px`,
           height: `${orbitSize}px`,
-          animationDuration: `${animationDuration / animationSpeed}s`,
+          animationDuration: `${animationDuration}s`,
           animationDelay: `-${(initialRotation / 360) * animationDuration}s`,
+          // animationDelay: `-${(initialRotation / 360 +
+          //   currentRotationPercentage) %
+          //   100}%`,
           animationPlayState: `${isPaused ? 'paused' : 'running'}`,
         }}
       >
         <div
           className={styles.planet}
+          title={planet.englishName}
           style={{
             width: `${planetSize}px`,
             height: `${planetSize}px`,
           }}
-        ></div>
+        >
+          {moons.map((moon, idx) =>
+            renderMoon(moon, idx, planetSize, animationDuration)
+          )}
+        </div>
       </div>
     );
   };
@@ -100,12 +181,12 @@ const Orrery = () => {
         <button onClick={handlePlayPause}>
           {isPaused ? <PlayOutline /> : <PauseOutline />}
         </button>
-        <Slider
+        <input
+          type="number"
           min={1}
-          max={5}
+          max={10}
           step={1}
-          value={animationSpeed}
-          labelText="Animation Speed"
+          value={animationSpeed.toString()}
           onChange={handleSpeedChange}
         />
       </div>
