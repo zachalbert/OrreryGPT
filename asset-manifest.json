@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/OrreryGPT/static/css/main.f123396d.css",
-    "main.js": "/OrreryGPT/static/js/main.c91e14c9.js",
-    "static/js/787.4ba8e627.chunk.js": "/OrreryGPT/static/js/787.4ba8e627.chunk.js",
-    "index.html": "/OrreryGPT/index.html",
-    "main.f123396d.css.map": "/OrreryGPT/static/css/main.f123396d.css.map",
-    "main.c91e14c9.js.map": "/OrreryGPT/static/js/main.c91e14c9.js.map",
-    "787.4ba8e627.chunk.js.map": "/OrreryGPT/static/js/787.4ba8e627.chunk.js.map"
+    "main.css": "/zachalbert/OrreryGPT/static/css/main.f123396d.css",
+    "main.js": "/zachalbert/OrreryGPT/static/js/main.86c20cf7.js",
+    "static/js/787.4ba8e627.chunk.js": "/zachalbert/OrreryGPT/static/js/787.4ba8e627.chunk.js",
+    "index.html": "/zachalbert/OrreryGPT/index.html",
+    "main.f123396d.css.map": "/zachalbert/OrreryGPT/static/css/main.f123396d.css.map",
+    "main.86c20cf7.js.map": "/zachalbert/OrreryGPT/static/js/main.86c20cf7.js.map",
+    "787.4ba8e627.chunk.js.map": "/zachalbert/OrreryGPT/static/js/787.4ba8e627.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.f123396d.css",
-    "static/js/main.c91e14c9.js"
+    "static/js/main.86c20cf7.js"
   ]
 }
