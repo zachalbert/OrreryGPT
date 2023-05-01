@@ -1,7 +1,7 @@
 {
   "name": "orrerygpt",
   "version": "0.1.0",
-  "homepage": "https://github.com/zachalbert/OrreryGPT",
+  "homepage": "https://zachalbert.github.io/",
   "private": true,
   "dependencies": {
     "@carbon/icons-react": "^11.19.0",
