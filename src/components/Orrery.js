@@ -218,7 +218,7 @@ const Orrery = () => {
         </a>
         <span>.</span>
         <a
-          href="#"
+          href="https://github.com/zachalbert/OrreryGPT"
           rel="noreferrer"
           target="_blank"
           className="flex items-center space-x-1 ml-2"
