@@ -39,6 +39,7 @@ const fetchData = async () => {
 
 const Orrery = () => {
   const defaultAnimationSpeed = 1;
+  const [isLoading, setIsLoading] = useState(true);
   const [planetsData, setPlanetsData] = useState([]);
   const [isPaused, setIsPaused] = useState(false);
   const [animationSpeed, setAnimationSpeed] = useState(defaultAnimationSpeed);
@@ -78,11 +79,13 @@ const Orrery = () => {
   useEffect(() => {
     const fetchPlanets = async () => {
       try {
+        setIsLoading(true);
         const data = await fetchData();
         const sortedData = data.sort(
           (a, b) => a.semimajorAxis - b.semimajorAxis
         );
         setPlanetsData(sortedData);
+        setIsLoading(false);
       } catch (err) {
         console.error('error fetching planets data:', err);
       }
@@ -184,9 +187,9 @@ const Orrery = () => {
         <input
           className="bg-slate-200 accent-blue-500 hover:accent-blue-400 active:accent-blue-600 rounded-lg appearance-none cursor-pointer dark:bg-slate-700"
           type="range"
-          min={1}
-          max={10}
-          step={1}
+          min={0.1}
+          max={2}
+          step={0.1}
           value={animationSpeed.toString()}
           onChange={handleSpeedChange}
         />
@@ -201,16 +204,28 @@ const Orrery = () => {
           )}
         </button>
       </div>
-      <div
-        className={styles.orrery}
-        style={{ width: `${orrerySize}px`, height: `${orrerySize}px` }}
-      >
+      {isLoading ? (
+        <div className="relative flex items-center justify-center">
+          <div className="absolute w-12 h-12 bg-slate-500 rounded-full"></div>
+          <div className="absolute w-24 h-4 flex justify-between animate-[spin_2s_linear_infinite]">
+            <div className="w-4 h-4 bg-slate-600 rounded-full"></div>
+          </div>
+          <div className="absolute w-32 h-4 flex justify-between animate-[spin_4s_linear_infinite]">
+            <div className="w-3 h-3 bg-slate-700 rounded-full"></div>
+          </div>
+        </div>
+      ) : (
         <div
-          className={styles.sun}
-          style={{ width: `${sunSize}px`, height: `${sunSize}px` }}
-        ></div>
-        {planetsData.map(renderPlanet)}
-      </div>
+          className={styles.orrery}
+          style={{ width: `${orrerySize}px`, height: `${orrerySize}px` }}
+        >
+          <div
+            className={styles.sun}
+            style={{ width: `${sunSize}px`, height: `${sunSize}px` }}
+          ></div>
+          {planetsData.map(renderPlanet)}
+        </div>
+      )}
       <div className="text-slate-500 absolute bottom-4 mx-auto flex space-x-1 items-center">
         <span>A ChatGPT-assisted solar system simulator by</span>
         <a href="https://www.zachalbert.com/" target="_blank" rel="noreferrer">
