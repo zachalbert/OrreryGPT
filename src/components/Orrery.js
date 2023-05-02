@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import styles from './Orrery.module.css';
 import cx from 'classnames';
 import { Play, Pause, LogoGithub } from '@carbon/icons-react';
@@ -43,6 +43,8 @@ const Orrery = () => {
   const [planetsData, setPlanetsData] = useState([]);
   const [isPaused, setIsPaused] = useState(false);
   const [animationSpeed, setAnimationSpeed] = useState(defaultAnimationSpeed);
+  const [simulationDate, setSimulationDate] = useState(new Date());
+  const earthSideralOrbit = 365.256;
 
   const planetColor = [
     'bg-yellow-400',
@@ -75,6 +77,28 @@ const Orrery = () => {
   const sunSize = maxPlanetSize * 1.5;
   const moonSize = moonOrbitStep / 2;
   const minOrbitSize = sunSize + orbitStep;
+
+  const updateSimulationDate = useRef(null);
+
+  useEffect(() => {
+    if (!isPaused) {
+      const intervalId = setInterval(() => {
+        const dateIncrement = (86400000 * animationSpeed) / 20;
+
+        setSimulationDate((prevDate) => {
+          const newDate = new Date(prevDate.getTime());
+          newDate.setMilliseconds(newDate.getMilliseconds() + dateIncrement);
+          return newDate;
+        });
+      }, 50);
+
+      return () => {
+        clearInterval(intervalId);
+      };
+    } else {
+      clearInterval(updateSimulationDate.current);
+    }
+  }, [animationSpeed, isPaused]);
 
   useEffect(() => {
     const fetchPlanets = async () => {
@@ -184,11 +208,18 @@ const Orrery = () => {
   return (
     <div className="flex h-full relative items-center justify-center">
       <div className="absolute top-4 right-6 flex items-center space-x-4 z-50">
+        <div className="text-slate-500">
+          {simulationDate.toLocaleDateString(undefined, {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          })}
+        </div>
         <input
           className="bg-slate-200 accent-blue-500 hover:accent-blue-400 active:accent-blue-600 rounded-lg appearance-none cursor-pointer dark:bg-slate-700"
           type="range"
           min={0.1}
-          max={2}
+          max={10}
           step={0.1}
           value={animationSpeed.toString()}
           onChange={handleSpeedChange}

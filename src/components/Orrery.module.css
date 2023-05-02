@@ -5,14 +5,14 @@
 
 .sun {
   @apply absolute
-  bg-amber-100
+  bg-yellow-300
   rounded-full
   top-1/2
   left-1/2
   -translate-x-1/2
   -translate-y-1/2
-  shadow-[0_0_100px_0_rgb(255,255,255)]
-  shadow-amber-50;
+  shadow-[0_0_200px_0_rgb(255,255,255)]
+  shadow-amber-200;
 }
 
 .orbit,
