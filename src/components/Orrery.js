@@ -3,9 +3,6 @@ import styles from './Orrery.module.css';
 import cx from 'classnames';
 import { Play, Pause, LogoGithub } from '@carbon/icons-react';
 
-const msPerDay = 1000 * 60 * 60 * 24;
-const msPerYear = msPerDay * 365.256;
-
 const fetchData = async () => {
   const cachedData = localStorage.getItem('planetsData');
   const lastFetchTimestamp = localStorage.getItem('lastFetchTimestamp');
@@ -14,7 +11,7 @@ const fetchData = async () => {
   if (
     cachedData &&
     lastFetchTimestamp &&
-    currentTime - lastFetchTimestamp < msPerDay
+    currentTime - lastFetchTimestamp < 86400000
   ) {
     return JSON.parse(cachedData);
   } else {
@@ -47,6 +44,7 @@ const Orrery = () => {
   const [isPaused, setIsPaused] = useState(false);
   const [animationSpeed, setAnimationSpeed] = useState(defaultAnimationSpeed);
   const [simulationDate, setSimulationDate] = useState(new Date());
+  const earthSideralOrbit = 365.256;
 
   const planetColor = [
     'bg-yellow-400',
@@ -64,7 +62,6 @@ const Orrery = () => {
   };
 
   const handleSpeedChange = (event) => {
-    console.log('animationSpeed: ' + event.target.value);
     setAnimationSpeed(event.target.value);
   };
 
@@ -83,66 +80,23 @@ const Orrery = () => {
 
   const updateSimulationDate = useRef(null);
 
-  // useEffect(() => {
-  //   if (!isPaused) {
-  //     const intervalId = setInterval(() => {
-  //       const dateIncrement = (msPerDay * animationSpeed) / 4;
-
-  //       setSimulationDate((prevDate) => {
-  //         const newDate = new Date(prevDate.getTime());
-  //         newDate.setMilliseconds(newDate.getMilliseconds() + dateIncrement);
-  //         return newDate;
-  //       });
-  //     }, 250);
-
-  //     return () => {
-  //       clearInterval(intervalId);
-  //     };
-  //   } else {
-  //     clearInterval(updateSimulationDate.current);
-  //   }
-  // }, [animationSpeed, isPaused]);
-  const animationFrameId = useRef(null);
-
-  const updateSimulation = () => {
-    if (!isPaused && planetsData.length > 0) {
-      const earth = planetsData.find(
-        (planet) => planet.englishName === 'Earth'
-      );
-
-      if (earth) {
-        const earthOrbitDuration = earth.sideralOrbit;
-        const speedFactor = msPerYear / (earthOrbitDuration * animationSpeed);
-        const dateIncrement = msPerDay * speedFactor;
+  useEffect(() => {
+    if (!isPaused) {
+      const intervalId = setInterval(() => {
+        const dateIncrement = (86400000 * animationSpeed) / 20;
 
         setSimulationDate((prevDate) => {
           const newDate = new Date(prevDate.getTime());
-          newDate.setTime(newDate.getMilliseconds() + dateIncrement);
+          newDate.setMilliseconds(newDate.getMilliseconds() + dateIncrement);
           return newDate;
         });
-        console.log(simulationDate);
-      }
+      }, 50);
 
-      animationFrameId.current = requestAnimationFrame(updateSimulation);
-    }
-  };
-
-  // Effect for handling the animation
-  useEffect(() => {
-    updateSimulation();
-    return () => {
-      if (animationFrameId.current) {
-        cancelAnimationFrame(animationFrameId.current);
-      }
-    };
-  }, [planetsData]);
-
-  // Effect for handling the changes in animationSpeed and isPaused
-  useEffect(() => {
-    if (!isPaused) {
-      updateSimulation();
-    } else if (animationFrameId.current) {
-      cancelAnimationFrame(animationFrameId.current);
+      return () => {
+        clearInterval(intervalId);
+      };
+    } else {
+      clearInterval(updateSimulationDate.current);
     }
   }, [animationSpeed, isPaused]);
 
