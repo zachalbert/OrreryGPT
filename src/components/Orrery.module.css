@@ -24,10 +24,11 @@
   border-white
   border-opacity-10
   rounded-full
-  -translate-x-1/2
+  origin-center;
+  /* -translate-x-1/2
   -translate-y-1/2;
   animation-timing-function: linear;
-  animation-iteration-count: infinite;
+  animation-iteration-count: infinite; */
 }
 
 .orbit {

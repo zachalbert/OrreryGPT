@@ -1,7 +1,18 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import styles from './Orrery.module.css';
 import cx from 'classnames';
 import { Play, Pause, LogoGithub } from '@carbon/icons-react';
+
+// Knobs & Levers
+const orrerySize = window.innerHeight * 0.9;
+const minPlanetSize = 15;
+const moonOrbitStep = 10;
+const minMoons = 2;
+const minMoonRadius = 80;
+const maxMoons = 8;
+const animationStepMS = 20;
+const stepsPerSecond = 1000 / animationStepMS;
+const msPerDay = 86400000;
 
 const fetchData = async () => {
   const cachedData = localStorage.getItem('planetsData');
@@ -11,24 +22,43 @@ const fetchData = async () => {
   if (
     cachedData &&
     lastFetchTimestamp &&
-    currentTime - lastFetchTimestamp < 86400000
+    // currentTime - lastFetchTimestamp < 10
+    currentTime - lastFetchTimestamp < msPerDay
   ) {
     return JSON.parse(cachedData);
   } else {
     const response = await fetch(
-      'https://api.le-systeme-solaire.net/rest/bodies?filter[]=isPlanet,neq,0;filter[]=isPlanet,neq,-1'
+      'https://api.le-systeme-solaire.net/rest/bodies?order=semimajorAxis,asc&filter[]=isPlanet,neq,0;filter[]=isPlanet,neq,-1'
     );
     const data = await response.json();
     const planetData = data.bodies;
 
-    for (const planet of planetData) {
-      if (planet.moons) {
-        const moonResponse = await fetch(
-          `https://api.le-systeme-solaire.net/rest/bodies?filter[]=aroundPlanet,eq,${planet.id}`
-        );
-        const moonData = await moonResponse.json();
-        planet.moonsData = moonData.bodies;
-      }
+    const moonRequests = planetData
+      .filter((planet) => planet.moons)
+      .map((planet) =>
+        fetch(
+          `https://api.le-systeme-solaire.net/rest/bodies?order=meanRadius,desc&filter[]=aroundPlanet,eq,${planet.id}`
+        )
+      );
+
+    const moonResponses = await Promise.all(moonRequests);
+    const moonData = await Promise.all(moonResponses.map((res) => res.json()));
+
+    for (let i = 0; i < moonData.length; i++) {
+      const planetWithMoons = planetData.find(
+        (planet) => planet.id === moonData[i].bodies[0].aroundPlanet.planet
+      );
+
+      const filteredMoons = moonData[i].bodies.filter((moon, index) => {
+        // Keep the first two moons to save Martian moves from getting filtered out
+        if (index < minMoons) {
+          return true;
+        }
+        // Keep remaining moons with meanRadius > minMoonRadius
+        return moon.meanRadius > minMoonRadius;
+      });
+
+      planetWithMoons.moonsData = filteredMoons;
     }
 
     localStorage.setItem('planetsData', JSON.stringify(planetData));
@@ -44,7 +74,14 @@ const Orrery = () => {
   const [isPaused, setIsPaused] = useState(false);
   const [animationSpeed, setAnimationSpeed] = useState(defaultAnimationSpeed);
   const [simulationDate, setSimulationDate] = useState(new Date());
-  const earthSideralOrbit = 365.256;
+  const [planetRotations, setPlanetRotations] = useState([]);
+  const [moonRotations, setMoonRotations] = useState({});
+
+  const orbitStep = orrerySize / (planetsData.length + 3);
+  const maxPlanetSize = orbitStep / 2;
+  const sunSize = maxPlanetSize * 1.5;
+  const moonSize = moonOrbitStep / 2;
+  const minOrbitSize = sunSize + orbitStep;
 
   const planetColor = [
     'bg-yellow-400',
@@ -58,47 +95,68 @@ const Orrery = () => {
   ];
 
   const handlePlayPause = () => {
-    setIsPaused(!isPaused);
+    setIsPaused((prevIsPaused) => !prevIsPaused);
   };
 
   const handleSpeedChange = (event) => {
     setAnimationSpeed(event.target.value);
   };
 
-  const orrerySize = window.innerHeight * 0.9;
-  const minPlanetSize = 15;
-  const maxMoons = 8;
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      setSimulationDate((prevDate) => {
+        const newDate = new Date(prevDate);
+        newDate.setSeconds(
+          prevDate.getSeconds() + animationSpeed * defaultAnimationSpeed
+        );
+        return newDate;
+      });
+    }, 1000);
 
-  const moonOrbitStep = 15;
-  const moonSpeedFactor = 1;
-
-  const orbitStep = orrerySize / (planetsData.length + 3);
-  const maxPlanetSize = orbitStep / 2;
-  const sunSize = maxPlanetSize * 1.5;
-  const moonSize = moonOrbitStep / 2;
-  const minOrbitSize = sunSize + orbitStep;
-
-  const updateSimulationDate = useRef(null);
+    return () => clearInterval(intervalId);
+  }, [animationSpeed]);
 
   useEffect(() => {
     if (!isPaused) {
-      const intervalId = setInterval(() => {
-        const dateIncrement = (86400000 * animationSpeed) / 20;
-
-        setSimulationDate((prevDate) => {
-          const newDate = new Date(prevDate.getTime());
-          newDate.setMilliseconds(newDate.getMilliseconds() + dateIncrement);
-          return newDate;
+      const updateRotations = () => {
+        const newPlanetRotations = planetsData.map((planet, index) => {
+          const initialRotation = planet.mainAnomaly;
+          const oneOrbitInSeconds = planet.sideralOrbit / animationSpeed;
+          const degreesPerSecond = 360 / oneOrbitInSeconds;
+          const degreesPerStep = degreesPerSecond / stepsPerSecond;
+          const currentRotation =
+            (planetRotations[index] ?? initialRotation) - degreesPerStep;
+          return currentRotation % 360;
         });
-      }, 50);
+        setPlanetRotations(newPlanetRotations);
 
-      return () => {
-        clearInterval(intervalId);
+        const newMoonRotations = {};
+        planetsData.forEach((planet, planetIndex) => {
+          if (planet.moonsData) {
+            planet.moonsData.forEach((moon, moonIndex) => {
+              let initialRotation = moon.mainAnomaly;
+              if (moon.mainAnomaly === 0) {
+                initialRotation = (360 / maxMoons) * moonIndex;
+              }
+              const oneOrbitInSeconds = moon.sideralOrbit / animationSpeed;
+              const degreesPerSecond = 360 / oneOrbitInSeconds;
+              const degreesPerStep = degreesPerSecond / stepsPerSecond;
+              const currentRotation =
+                (moonRotations[moon.id]?.[moonIndex] ?? initialRotation) -
+                degreesPerStep * (moon.id === 'triton' ? -1 : 1);
+              newMoonRotations[moon.id] = newMoonRotations[moon.id] || [];
+              newMoonRotations[moon.id][moonIndex] = currentRotation % 360;
+            });
+          }
+        });
+        setMoonRotations(newMoonRotations);
       };
-    } else {
-      clearInterval(updateSimulationDate.current);
+
+      const intervalId = setInterval(updateRotations, animationStepMS);
+
+      return () => clearInterval(intervalId);
     }
-  }, [animationSpeed, isPaused]);
+  }, [isPaused, planetsData, planetRotations, moonRotations, animationSpeed]);
 
   useEffect(() => {
     const fetchPlanets = async () => {
@@ -118,29 +176,67 @@ const Orrery = () => {
     fetchPlanets();
   }, []);
 
-  const renderMoon = (moon, index, planetSize, planetAnimationDuration, bg) => {
+  const renderPlanet = (planet, index) => {
+    const orbitSize = minOrbitSize + index * orbitStep;
+    const planetSize =
+      ((planet.meanRadius - 2439) / (69841 - 2439)) *
+        (maxPlanetSize - minPlanetSize) +
+      minPlanetSize;
+    const initialRotation = planet.mainAnomaly;
+
+    const moons = planet.moonsData
+      ? planet.moonsData.sort((a, b) => a.semimajorAxis - b.semimajorAxis)
+      : [];
+
+    return (
+      <div
+        key={planet.id}
+        className={styles.orbit}
+        title={planet.englishName}
+        style={{
+          width: `${orbitSize}px`,
+          height: `${orbitSize}px`,
+          transform: `translate(-50%, -50%) rotate(${
+            (planetRotations[index] ?? initialRotation) % 360
+          }deg)`,
+        }}
+      >
+        <div
+          className={cx(styles.planet, planetColor[index])}
+          title={planet.englishName}
+          style={{
+            width: `${planetSize}px`,
+            height: `${planetSize}px`,
+          }}
+        >
+          {moons.map((moon, idx) =>
+            renderMoon(moon, idx, planetSize, planetColor[index])
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const renderMoon = (moon, index, planetSize, bg) => {
     const moonOrbitSize = planetSize + moonOrbitStep + index * moonOrbitStep;
-    const animationDuration = moon.sideralOrbit * moonSpeedFactor;
-    let initialRotation = moon.mainAnomaly;
-    if (moon.mainAnomaly === 0) {
-      initialRotation = (360 / maxMoons) * index;
-    }
 
     return (
       <div
         key={moon.id}
-        title={moon.englishName}
+        title={
+          moon.englishName +
+          '_axis:' +
+          moon.semimajorAxis +
+          '_size:' +
+          moon.meanRadius
+        }
         className={cx(styles.moonOrbit, moon.englishName)}
         style={{
           width: `${moonOrbitSize}px`,
           height: `${moonOrbitSize}px`,
-          animationDuration: `${animationDuration / animationSpeed}s`,
-          animationDelay: `-${
-            (initialRotation / 360) * (animationDuration / animationSpeed)
-          }s`,
-          animationPlayState: `${isPaused ? 'paused' : 'running'}`,
-          animationName:
-            moon.englishName === 'Triton' ? styles.orbitCW : styles.orbitCCW,
+          transform: `translate(-50%, -50%) rotate(${
+            (moonRotations[moon.id] && moonRotations[moon.id][index]) || 0
+          }deg)`,
         }}
       >
         <div
@@ -155,65 +251,18 @@ const Orrery = () => {
     );
   };
 
-  const renderPlanet = (planet, index) => {
-    const orbitSize = minOrbitSize + index * orbitStep;
-    const planetSize =
-      ((planet.meanRadius - 2439) / (69841 - 2439)) *
-        (maxPlanetSize - minPlanetSize) +
-      minPlanetSize;
-    const initialRotation = planet.mainAnomaly;
-    const animationDuration = planet.sideralOrbit / animationSpeed;
-
-    const moons = planet.moonsData
-      ? planet.moonsData
-          .slice(0, maxMoons)
-          .sort((a, b) => a.semimajorAxis - b.semimajorAxis)
-      : [];
-
-    return (
-      <div
-        key={planet.id}
-        className={styles.orbit}
-        title={planet.englishName}
-        style={{
-          width: `${orbitSize}px`,
-          height: `${orbitSize}px`,
-          animationDuration: `${animationDuration}s`,
-          animationDelay: `-${(initialRotation / 360) * animationDuration}s`,
-          animationPlayState: `${isPaused ? 'paused' : 'running'}`,
-        }}
-      >
-        <div
-          className={cx(styles.planet, planetColor[index])}
-          title={planet.englishName}
-          style={{
-            width: `${planetSize}px`,
-            height: `${planetSize}px`,
-          }}
-        >
-          {moons.map((moon, idx) =>
-            renderMoon(
-              moon,
-              idx,
-              planetSize,
-              animationDuration,
-              planetColor[index]
-            )
-          )}
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div className="flex h-full relative items-center justify-center">
       <div className="absolute top-4 right-6 flex items-center space-x-4 z-50">
-        <div className="text-slate-500">
-          {simulationDate.toLocaleDateString(undefined, {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          })}
+        <div className="text-slate-500 space-x-4">
+          <span>
+            {simulationDate.toLocaleDateString('en-us', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            })}
+          </span>
+          <input type="date" />
         </div>
         <input
           className="bg-slate-200 accent-blue-500 hover:accent-blue-400 active:accent-blue-600 rounded-lg appearance-none cursor-pointer dark:bg-slate-700"
