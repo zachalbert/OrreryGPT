@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import styles from './Orrery.module.css';
 import cx from 'classnames';
 import { Play, Pause, LogoGithub } from '@carbon/icons-react';
 
 // Knobs & Levers
-const orrerySize = window.innerHeight * 0.9;
+const orrerySize = window.innerHeight * 1;
 const minPlanetSize = 15;
 const moonOrbitStep = 10;
 const minMoons = 2;
@@ -74,6 +73,7 @@ const Orrery = () => {
   const [isPaused, setIsPaused] = useState(false);
   const [animationSpeed, setAnimationSpeed] = useState(defaultAnimationSpeed);
   const [simulationDate, setSimulationDate] = useState(new Date());
+  const [daysSinceStart, setDaysSinceStart] = useState(0);
   const [planetRotations, setPlanetRotations] = useState([]);
   const [moonRotations, setMoonRotations] = useState({});
 
@@ -94,6 +94,39 @@ const Orrery = () => {
     'bg-blue-700',
   ];
 
+  const sunClasses = [
+    'absolute',
+    'bg-yellow-300',
+    'rounded-full',
+    'top-1/2',
+    'left-1/2',
+    '-translate-x-1/2',
+    '-translate-y-1/2',
+    'shadow-[0_0_200px_0_rgb(255,255,255)]',
+    'shadow-amber-200',
+  ];
+
+  const orbitClasses = [
+    'absolute',
+    'left-1/2',
+    'top-1/2',
+    'border',
+    'border-white',
+    'border-opacity-10',
+    'rounded-full',
+    'origin-center',
+  ];
+
+  const planetMoonClasses = [
+    'absolute',
+    'rounded-full',
+    'top-0',
+    'left-1/2',
+    '-translate-x-1/2',
+    '-translate-y-1/2',
+    'z-40',
+  ];
+
   const handlePlayPause = () => {
     setIsPaused((prevIsPaused) => !prevIsPaused);
   };
@@ -101,20 +134,6 @@ const Orrery = () => {
   const handleSpeedChange = (event) => {
     setAnimationSpeed(event.target.value);
   };
-
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      setSimulationDate((prevDate) => {
-        const newDate = new Date(prevDate);
-        newDate.setSeconds(
-          prevDate.getSeconds() + animationSpeed * defaultAnimationSpeed
-        );
-        return newDate;
-      });
-    }, 1000);
-
-    return () => clearInterval(intervalId);
-  }, [animationSpeed]);
 
   useEffect(() => {
     if (!isPaused) {
@@ -143,13 +162,29 @@ const Orrery = () => {
               const degreesPerStep = degreesPerSecond / stepsPerSecond;
               const currentRotation =
                 (moonRotations[moon.id]?.[moonIndex] ?? initialRotation) -
-                degreesPerStep * (moon.id === 'triton' ? -1 : 1);
+                degreesPerStep * (moon.englishName === 'Triton' ? -1 : 1);
               newMoonRotations[moon.id] = newMoonRotations[moon.id] || [];
               newMoonRotations[moon.id][moonIndex] = currentRotation % 360;
             });
           }
         });
         setMoonRotations(newMoonRotations);
+
+        // Calculate days passed based on Earth's rotation
+        const earthIndex = planetsData.findIndex(
+          (planet) => planet.englishName === 'Earth'
+        );
+        const earthRotation = planetRotations[earthIndex];
+        const daysPassed = Math.floor(
+          ((360 - earthRotation) / 360) * planetsData[earthIndex].sideralOrbit
+        );
+
+        if (daysPassed > daysSinceStart) {
+          setDaysSinceStart(daysPassed);
+          const newSimulationDate = new Date(simulationDate);
+          newSimulationDate.setDate(simulationDate.getDate() + 1);
+          setSimulationDate(newSimulationDate);
+        }
       };
 
       const intervalId = setInterval(updateRotations, animationStepMS);
@@ -191,8 +226,8 @@ const Orrery = () => {
     return (
       <div
         key={planet.id}
-        className={styles.orbit}
-        title={planet.englishName}
+        className={cx(orbitClasses)}
+        id={planet.englishName + '_orbit'}
         style={{
           width: `${orbitSize}px`,
           height: `${orbitSize}px`,
@@ -202,8 +237,8 @@ const Orrery = () => {
         }}
       >
         <div
-          className={cx(styles.planet, planetColor[index])}
-          title={planet.englishName}
+          className={cx(planetMoonClasses, planetColor[index])}
+          id={planet.englishName}
           style={{
             width: `${planetSize}px`,
             height: `${planetSize}px`,
@@ -223,14 +258,8 @@ const Orrery = () => {
     return (
       <div
         key={moon.id}
-        title={
-          moon.englishName +
-          '_axis:' +
-          moon.semimajorAxis +
-          '_size:' +
-          moon.meanRadius
-        }
-        className={cx(styles.moonOrbit, moon.englishName)}
+        className={cx(orbitClasses, 'border-none')}
+        id={moon.englishName + '_orbit'}
         style={{
           width: `${moonOrbitSize}px`,
           height: `${moonOrbitSize}px`,
@@ -240,8 +269,8 @@ const Orrery = () => {
         }}
       >
         <div
-          className={cx(styles.moon, bg)}
-          title={moon.englishName}
+          className={cx(planetMoonClasses, bg)}
+          id={moon.englishName}
           style={{
             width: `${moonSize}px`,
             height: `${moonSize}px`,
@@ -253,29 +282,26 @@ const Orrery = () => {
 
   return (
     <div className="flex h-full relative items-center justify-center">
+      <div className="text-slate-400 absolute top-6 mx-auto font-bold">
+        {simulationDate.toLocaleDateString('en-us', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        })}
+      </div>
       <div className="absolute top-4 right-6 flex items-center space-x-4 z-50">
-        <div className="text-slate-500 space-x-4">
-          <span>
-            {simulationDate.toLocaleDateString('en-us', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-            })}
-          </span>
-          <input type="date" />
-        </div>
         <input
           className="bg-slate-200 accent-blue-500 hover:accent-blue-400 active:accent-blue-600 rounded-lg appearance-none cursor-pointer dark:bg-slate-700"
           type="range"
           min={0.1}
-          max={10}
+          max={20}
           step={0.1}
           value={animationSpeed.toString()}
           onChange={handleSpeedChange}
         />
         <button
           onClick={handlePlayPause}
-          className="text-slate-500 hover:text-slate-400 active:text-slate-300 p-4 hover:bg-slate-900 active:bg-slate-800 rounded-full"
+          className="text-slate-500 hover:text-slate-400 active:text-slate-300 p-2 hover:bg-slate-900 active:bg-slate-800 rounded-full"
         >
           {isPaused ? (
             <Play className="w-6 h-6" />
@@ -296,22 +322,18 @@ const Orrery = () => {
         </div>
       ) : (
         <div
-          className={styles.orrery}
+          className="relative mx-auto"
           style={{ width: `${orrerySize}px`, height: `${orrerySize}px` }}
         >
           <div
-            className={styles.sun}
+            className={cx(sunClasses)}
             style={{ width: `${sunSize}px`, height: `${sunSize}px` }}
           ></div>
           {planetsData.map(renderPlanet)}
         </div>
       )}
       <div className="text-slate-500 text-xs md:text-base absolute bottom-4 mx-auto flex space-x-1 items-center">
-        <span>ChatGPT-assisted solar system by</span>
-        <a href="https://www.zachalbert.com/" target="_blank" rel="noreferrer">
-          Zac
-        </a>
-        <span>.</span>
+        <span>ChatGPT-assisted solar system.</span>
         <a
           href="https://github.com/zachalbert/OrreryGPT"
           rel="noreferrer"
@@ -319,7 +341,7 @@ const Orrery = () => {
           className="flex items-center space-x-1 ml-2"
         >
           <LogoGithub className="inline" />
-          <span>Source</span>
+          <span>Source &amp; info</span>
         </a>
         .
       </div>
