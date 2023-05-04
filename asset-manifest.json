@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/OrreryGPT/static/css/main.0bd14137.css",
-    "main.js": "/OrreryGPT/static/js/main.0630dfc2.js",
+    "main.css": "/OrreryGPT/static/css/main.eee9f9eb.css",
+    "main.js": "/OrreryGPT/static/js/main.46669b67.js",
     "static/js/787.4ba8e627.chunk.js": "/OrreryGPT/static/js/787.4ba8e627.chunk.js",
     "index.html": "/OrreryGPT/index.html",
-    "main.0bd14137.css.map": "/OrreryGPT/static/css/main.0bd14137.css.map",
-    "main.0630dfc2.js.map": "/OrreryGPT/static/js/main.0630dfc2.js.map",
+    "main.eee9f9eb.css.map": "/OrreryGPT/static/css/main.eee9f9eb.css.map",
+    "main.46669b67.js.map": "/OrreryGPT/static/js/main.46669b67.js.map",
     "787.4ba8e627.chunk.js.map": "/OrreryGPT/static/js/787.4ba8e627.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.0bd14137.css",
-    "static/js/main.0630dfc2.js"
+    "static/css/main.eee9f9eb.css",
+    "static/js/main.46669b67.js"
   ]
 }
