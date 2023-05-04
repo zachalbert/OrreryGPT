@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import cx from 'classnames';
-import { Play, Pause, LogoGithub } from '@carbon/icons-react';
+import { PlayFilledAlt, PauseFilled, LogoGithub } from '@carbon/icons-react';
 
 // Knobs & Levers
 const orrerySize = window.innerHeight * 1;
@@ -84,6 +84,17 @@ const Orrery = () => {
   const minOrbitSize = sunSize + orbitStep;
 
   const planetColor = [
+    'bg-gradient-to-b from-yellow-950 via-yellow-950 via-50% to-yellow-400 to-90%',
+    'bg-gradient-to-b from-lime-950 via-lime-950 via-50% to-lime-400 to-90%',
+    'bg-gradient-to-b from-green-950 via-green-950 via-50% to-green-500 to-90%',
+    'bg-gradient-to-b from-emerald-950 via-emerald-950 via-50% to-emerald-500 to-90%',
+    'bg-gradient-to-b from-teal-950 via-teal-950 via-50% to-teal-600 to-90%',
+    'bg-gradient-to-b from-cyan-950 via-cyan-950 via-50% to-cyan-600 to-90%',
+    'bg-gradient-to-b from-sky-950 via-sky-950 via-50% to-sky-700 to-90%',
+    'bg-gradient-to-b from-blue-950 via-blue-950 via-50% to-blue-700 to-90%',
+  ];
+
+  const moonColor = [
     'bg-yellow-400',
     'bg-lime-400',
     'bg-green-500',
@@ -96,14 +107,14 @@ const Orrery = () => {
 
   const sunClasses = [
     'absolute',
-    'bg-yellow-300',
+    'bg-yellow-200',
     'rounded-full',
     'top-1/2',
     'left-1/2',
     '-translate-x-1/2',
     '-translate-y-1/2',
-    'shadow-[0_0_200px_0_rgb(255,255,255)]',
-    'shadow-amber-200',
+    'shadow-[0_0_400px_30px_rgb(255,255,255)]',
+    'shadow-amber-300',
   ];
 
   const orbitClasses = [
@@ -245,7 +256,7 @@ const Orrery = () => {
           }}
         >
           {moons.map((moon, idx) =>
-            renderMoon(moon, idx, planetSize, planetColor[index])
+            renderMoon(moon, idx, planetSize, moonColor[index])
           )}
         </div>
       </div>
@@ -282,14 +293,14 @@ const Orrery = () => {
 
   return (
     <div className="flex h-full relative items-center justify-center">
-      <div className="text-slate-400 absolute top-6 mx-auto font-bold">
+      <div className="text-slate-400 absolute top-8 mx-auto font-thin uppercase text-3xl tracking-widest">
         {simulationDate.toLocaleDateString('en-us', {
           year: 'numeric',
           month: 'long',
           day: 'numeric',
         })}
       </div>
-      <div className="absolute top-4 right-6 flex items-center space-x-4 z-50">
+      <div className="absolute top-8 right-6 flex items-center space-x-4 z-50">
         <input
           className="bg-slate-200 accent-blue-500 hover:accent-blue-400 active:accent-blue-600 rounded-lg appearance-none cursor-pointer dark:bg-slate-700"
           type="range"
@@ -304,9 +315,9 @@ const Orrery = () => {
           className="text-slate-500 hover:text-slate-400 active:text-slate-300 p-2 hover:bg-slate-900 active:bg-slate-800 rounded-full"
         >
           {isPaused ? (
-            <Play className="w-6 h-6" />
+            <PlayFilledAlt className="w-6 h-6" />
           ) : (
-            <Pause className="w-6 h-6" />
+            <PauseFilled className="w-6 h-6" />
           )}
         </button>
       </div>
@@ -332,7 +343,7 @@ const Orrery = () => {
           {planetsData.map(renderPlanet)}
         </div>
       )}
-      <div className="text-slate-500 text-xs md:text-base absolute bottom-4 mx-auto flex space-x-1 items-center">
+      <div className="text-slate-400 font-light text-xs md:text-base absolute bottom-4 mx-auto flex space-x-1 items-center">
         <span>ChatGPT-assisted solar system.</span>
         <a
           href="https://github.com/zachalbert/OrreryGPT"

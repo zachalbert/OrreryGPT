@@ -3,10 +3,10 @@
 @tailwind utilities;
 
 #root {
-  @apply bg-slate-950
-  h-screen
+  @apply h-screen
   w-full
   overflow-hidden;
+  background: radial-gradient(rgb(35, 12, 36), rgb(2, 6, 23));
 }
 
 a {
